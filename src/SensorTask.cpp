@@ -41,7 +41,7 @@ void SensorTask::loop()
 
     // note: readTemperature(true, false) === read temp in fahrenheit
     float temperature = dht.readTemperature(true, false);
-    float humidity = dht.readHumidity(true);
+    float humidity = dht.readHumidity(false);
 
     doc["Temperature"].set(temperature);
     doc["TempUnit"].set("F");
