@@ -15,7 +15,7 @@ public:
 
 protected:
     Adafruit_MQTT_Client* mqtt;
-    char output[SUBSCRIPTIONDATALEN];
+    char output[60];
     DHT dht;
 
     void loop();
