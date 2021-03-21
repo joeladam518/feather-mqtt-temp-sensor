@@ -27,7 +27,7 @@ SensorTask::SensorTask(Adafruit_MQTT_Client* m, int pin): mqtt(m), dht(pin, DHT2
 //-------------------------------
 void SensorTask::setup()
 {
-    Serial.println("Setup Sensor Task");
+    //Serial.println("Setup Sensor Task");
     dht.begin();
 }
 
