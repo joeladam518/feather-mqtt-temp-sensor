@@ -1,14 +1,18 @@
 #include "config.h"
 #include <Arduino.h>
 #include <HardwareSerial.h>
-#include <Adafruit_MQTT.h>
 #include <Adafruit_MQTT_Client.h>
 #include "MqttTask.h"
+#include "PublishTemp.hpp"
+#include "Sensor.h"
 
 //-------------------------------
 // Constructor
 //-------------------------------
-MqttTask::MqttTask(Adafruit_MQTT_Client* m): mqtt(m)
+MqttTask::MqttTask(Adafruit_MQTT_Client* m, Sensor* s):
+    mqtt(m),
+    sensor(s),
+    getTempSubscription(m, SUB_GET_TEMP)
 {
     //
 }
@@ -23,16 +27,21 @@ MqttTask::MqttTask(Adafruit_MQTT_Client* m): mqtt(m)
 //-------------------------------
 void MqttTask::setup()
 {
-    //Serial.println("Setup MqttTask");
+    Serial.println(F("Setup MqttTask"));
+
+    // unsubscribe
+    mqtt->unsubscribe(&getTempSubscription);
+    // then re-subscribe
+    mqtt->subscribe(&getTempSubscription);
 }
 
 void MqttTask::loop()
 {
-    //Serial.println("Run MqttTask");
+    Serial.println(F("Run MqttTask"));
 
     connect();
 
-    mqtt->processPackets(10000);
+    processPackets(5000);
 
     if(!mqtt->ping()) {
         mqtt->disconnect();
@@ -70,4 +79,21 @@ void MqttTask::connect()
 bool MqttTask::shouldRun()
 {
     return Task::shouldRun();
+}
+
+void MqttTask::processPackets(int16_t readTime)
+{
+    if (!mqtt->connected()) {
+        return;
+    }
+
+    Adafruit_MQTT_Subscribe *subscription = mqtt->readSubscription(readTime);
+
+    if (subscription == NULL) {
+        return;
+    }
+
+    if (subscription == &getTempSubscription) {
+        publishTemp(PUB_STATUS, mqtt, sensor);
+    }
 }

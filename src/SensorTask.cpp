@@ -1,18 +1,20 @@
 #include "config.h"
 #include <Arduino.h>
 #include <HardwareSerial.h>
-#include <Adafruit_MQTT.h>
-#include <Adafruit_MQTT_Client.h>
 #include <ArduinoJson.h>
+#include "PublishTemp.hpp"
+#include "Sensor.h"
 #include "SensorTask.h"
 
 
 //-------------------------------
 // Constructor
 //-------------------------------
-SensorTask::SensorTask(Adafruit_MQTT_Client* m, int pin): mqtt(m), dht(pin, DHT21)
+SensorTask::SensorTask(Adafruit_MQTT_Client* m, Sensor* s):
+    mqtt(m),
+    sensor(s)
 {
-    memset(output, '\0', sizeof(output));
+    //
 }
 
 
@@ -27,28 +29,14 @@ SensorTask::SensorTask(Adafruit_MQTT_Client* m, int pin): mqtt(m), dht(pin, DHT2
 //-------------------------------
 void SensorTask::setup()
 {
-    //Serial.println("Setup Sensor Task");
-    dht.begin();
+    Serial.println(F("Setup SensorTask"));
 }
 
 void SensorTask::loop()
 {
-    //Serial.println("Run SensorTask");
-    memset(output, '\0', sizeof(output));
+    Serial.println(F("Run SensorTask"));
 
-    const int capacity = JSON_OBJECT_SIZE(3);
-    StaticJsonDocument<capacity> doc;
-
-    // note: readTemperature(true, false) === read temp in fahrenheit
-    float temperature = dht.readTemperature(true, false);
-    float humidity = dht.readHumidity(false);
-
-    doc["Temperature"].set(temperature);
-    doc["TempUnit"].set("F");
-    doc["Humidity"].set(humidity);
-
-    serializeJson(doc, output, sizeof(output));
-    mqtt->publish(PUB_STATE, output);
+    publishTemp(PUB_STATE, mqtt, sensor);
 
     delay(60300);
 }

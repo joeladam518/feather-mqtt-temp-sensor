@@ -6,16 +6,18 @@
 #include <Adafruit_MQTT_Client.h>
 #include <Scheduler.h>
 #include "MqttTask.h"
+#include "Sensor.h"
 #include "SensorTask.h"
 
 #define TEMP_SENSOR_PIN 14
 
 WiFiClient client;
-
 Adafruit_MQTT_Client mqtt(&client, MQTT_BROKER, MQTT_PORT);
 
-MqttTask mqttTask(&mqtt);
-SensorTask sensorTask(&mqtt, TEMP_SENSOR_PIN);
+Sensor sensor(TEMP_SENSOR_PIN);
+
+MqttTask mqttTask(&mqtt, &sensor);
+SensorTask sensorTask(&mqtt, &sensor);
 
 void setup()
 {
