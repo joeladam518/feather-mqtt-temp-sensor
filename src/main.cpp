@@ -1,23 +1,18 @@
 #include "config.h"
+#include "main.hpp"
 #include <Arduino.h>
 #include <HardwareSerial.h>
+#include <ArduinoJson.h>
 #include <ESP8266WiFi.h>
 #include <Adafruit_MQTT.h>
 #include <Adafruit_MQTT_Client.h>
-#include <Scheduler.h>
-#include "MqttTask.h"
-#include "Sensor.h"
-#include "SensorTask.h"
+#include <DHT.h>
 
-#define TEMP_SENSOR_PIN 14
+DHT dht(TEMP_SENSOR_PIN, DHT21);
 
 WiFiClient client;
 Adafruit_MQTT_Client mqtt(&client, MQTT_BROKER, MQTT_PORT);
-
-Sensor sensor(TEMP_SENSOR_PIN);
-
-MqttTask mqttTask(&mqtt, &sensor);
-SensorTask sensorTask(&mqtt, &sensor);
+struct DhtValues sensorValues = {0.00, 0.00, "F"};
 
 void setup()
 {
@@ -26,19 +21,87 @@ void setup()
 
     Serial.println("");
 
-    pinMode(TEMP_SENSOR_PIN, OUTPUT);
-    digitalWrite(TEMP_SENSOR_PIN, LOW);
-
     WiFi.begin(WLAN_SSID, WLAN_PASS);
-
+    delay(1000);
     while (WiFi.status() != WL_CONNECTED) {
         delay(500);
+        Serial.print(".");
     }
+    Serial.println("");
+    Serial.println("Wifi Connected");
+    Serial.print("IP address: ");
+    Serial.println(WiFi.localIP());
 
-    Scheduler.start(&sensorTask);
-    Scheduler.start(&mqttTask);
-
-    Scheduler.begin();
+    dht.begin();
 }
 
-void loop() {}
+void loop()
+{
+    mqttConnect();
+    read(&sensorValues);
+    publish(PUB_STATE, &sensorValues);
+
+    delay(30000);
+}
+
+void mqttConnect(void)
+{
+    if (mqtt.connected()) {
+        return;
+    }
+
+    Serial.print("Connecting to MQTT... ");
+
+    int8_t ret;
+    uint8_t retries = 3;
+    while ((ret = mqtt.connect()) != 0) {
+        Serial.println(mqtt.connectErrorString(ret));
+        Serial.println("Retrying MQTT connection in 5 seconds...");
+
+        mqtt.disconnect();
+        delay(5000);
+
+        retries--;
+        if (retries == 0) {
+            while (1); // die and wait  to be reset
+        }
+    }
+
+    Serial.println("MQTT Connected!");
+}
+
+void read(struct DhtValues* values)
+{
+    values->temperature = dht.readTemperature(true, true);
+    values->humidity = dht.readHumidity(false);
+
+#ifdef DEBUG
+    Serial.println(F("read()"));
+    Serial.print(F("temperature: "));
+    Serial.println(values->temperature);
+    Serial.print(F("humidity: "));
+    Serial.println(values->humidity);
+#endif
+}
+
+void publish(const char* topic, struct DhtValues* values)
+{
+#ifdef DEBUG
+    Serial.print(F("publishTemp() "));
+    Serial.print(F("topic: "));
+    Serial.println(topic);
+#endif
+
+    char output[60];
+    memset(output, '\0', sizeof(output));
+
+    const int capacity = JSON_OBJECT_SIZE(3);
+    StaticJsonDocument<capacity> doc;
+
+    doc["Humidity"].set(values->humidity);
+    doc["Temperature"].set(values->temperature);
+    doc["TempUnit"].set((const char*)values->tempUnit);
+
+    serializeJson(doc, output, sizeof(output));
+    mqtt.publish(topic, output);
+}
