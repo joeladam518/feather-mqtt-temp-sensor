@@ -1,14 +1,14 @@
 #ifndef __MQTT_TEMP_MAIN_H__
 #define __MQTT_TEMP_MAIN_H__
 
-struct DhtValues {
+typedef struct DhtValues {
     float humidity;
     float temperature;
     char tempUnit[2];
-};
+} DhtValues_t;
 
 void mqttConnect(void);
-void read(struct DhtValues* values);
-void publish(const char* topic, struct DhtValues* values);
+void read(DhtValues_t* values);
+void publish(const char* topic, DhtValues_t* values);
 
 #endif

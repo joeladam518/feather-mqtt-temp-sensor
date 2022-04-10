@@ -41,7 +41,7 @@ void loop()
     read(&sensorValues);
     publish(PUB_STATE, &sensorValues);
 
-    delay(30000);
+    delay(20000);
 }
 
 void mqttConnect(void)
@@ -70,10 +70,23 @@ void mqttConnect(void)
     Serial.println("MQTT Connected!");
 }
 
-void read(struct DhtValues* values)
+void read(DhtValues_t* values)
 {
-    values->temperature = dht.readTemperature(true, true);
-    values->humidity = dht.readHumidity(false);
+    float humidity = dht.readHumidity(false);
+
+    if (!isnan(humidity)) {
+        values->humidity = humidity;
+    }
+
+    delay(250);
+
+    float temperature = dht.readTemperature(true, false);
+
+    if (!isnan(temperature)) {
+        values->temperature = temperature;
+    }
+
+    delay(250);
 
 #ifdef DEBUG
     Serial.println(F("read()"));
@@ -84,7 +97,7 @@ void read(struct DhtValues* values)
 #endif
 }
 
-void publish(const char* topic, struct DhtValues* values)
+void publish(const char* topic, DhtValues_t* values)
 {
 #ifdef DEBUG
     Serial.print(F("publishTemp() "));
