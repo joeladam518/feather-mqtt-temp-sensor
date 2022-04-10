@@ -72,21 +72,8 @@ void mqttConnect(void)
 
 void read(DhtValues_t* values)
 {
-    float humidity = dht.readHumidity(false);
-
-    if (!isnan(humidity)) {
-        values->humidity = humidity;
-    }
-
-    delay(250);
-
-    float temperature = dht.readTemperature(true, false);
-
-    if (!isnan(temperature)) {
-        values->temperature = temperature;
-    }
-
-    delay(250);
+    values->temperature = dht.readTemperature(true);
+    values->humidity = dht.readHumidity();
 
 #ifdef DEBUG
     Serial.println(F("read()"));
@@ -95,6 +82,8 @@ void read(DhtValues_t* values)
     Serial.print(F("humidity: "));
     Serial.println(values->humidity);
 #endif
+
+    delay(250);
 }
 
 void publish(const char* topic, DhtValues_t* values)
@@ -111,9 +100,9 @@ void publish(const char* topic, DhtValues_t* values)
     const int capacity = JSON_OBJECT_SIZE(3);
     StaticJsonDocument<capacity> doc;
 
-    doc["Humidity"].set(values->humidity);
-    doc["Temperature"].set(values->temperature);
-    doc["TempUnit"].set((const char*)values->tempUnit);
+    doc["Humidity"] = ((int)(values->humidity * 100) / 100.0);
+    doc["Temperature"] = ((int)(values->temperature * 100) / 100.0);
+    doc["TempUnit"] = (const char *)values->tempUnit;
 
     serializeJson(doc, output, sizeof(output));
     mqtt.publish(topic, output);
