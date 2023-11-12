@@ -14,6 +14,10 @@ WiFiClient client;
 Adafruit_MQTT_Client mqtt(&client, MQTT_BROKER, MQTT_PORT);
 struct DhtValues sensorValues = {0.00, 0.00, "F"};
 
+// Timing
+const int period = 30000;
+unsigned long now = 0;
+
 void setup()
 {
     Serial.begin(115200);
@@ -38,10 +42,12 @@ void setup()
 void loop()
 {
     mqttConnect();
-    read(&sensorValues);
-    publish(PUB_STATE, &sensorValues);
 
-    delay(20000);
+    if (millis() >= now + period) {
+        now = now + period;
+        read(&sensorValues);
+        publish(PUB_STATE, &sensorValues);
+    }
 }
 
 void mqttConnect(void)
@@ -75,24 +81,24 @@ void read(DhtValues_t* values)
     values->temperature = dht.readTemperature(true);
     values->humidity = dht.readHumidity();
 
-#ifdef DEBUG
-    Serial.println(F("read()"));
-    Serial.print(F("temperature: "));
-    Serial.println(values->temperature);
-    Serial.print(F("humidity: "));
-    Serial.println(values->humidity);
-#endif
+    #ifdef DEBUG
+        Serial.println(F("read()"));
+        Serial.print(F("temperature: "));
+        Serial.println(values->temperature);
+        Serial.print(F("humidity: "));
+        Serial.println(values->humidity);
+    #endif
 
-    delay(250);
+    delay(200);
 }
 
 void publish(const char* topic, DhtValues_t* values)
 {
-#ifdef DEBUG
-    Serial.print(F("publishTemp() "));
-    Serial.print(F("topic: "));
-    Serial.println(topic);
-#endif
+    #ifdef DEBUG
+        Serial.println(F("publishTemp()"));
+        Serial.print(F("topic: "));
+        Serial.println(topic);
+    #endif
 
     char output[60];
     memset(output, '\0', sizeof(output));
@@ -106,4 +112,5 @@ void publish(const char* topic, DhtValues_t* values)
 
     serializeJson(doc, output, sizeof(output));
     mqtt.publish(topic, output);
+    delay(200);
 }
