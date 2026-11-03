@@ -1,0 +1,42 @@
+# Pins the exact board package and library versions this firmware is built with, so a
+# build next year gets the same code as a build today. It does the job dependencies.lock
+# does in the ESP-IDF projects.
+#
+# `make build` passes --profile huzzah, which downloads anything listed here on the first
+# build. They go into arduino-cli's own cache, separate from libraries installed globally,
+# so nothing installed outside this file can sneak into the build.
+#
+# To update a version, change it here and build again.
+
+profiles:
+  # The profile's name. The Makefile picks it with --profile huzzah.
+  huzzah:
+    notes: Adafruit Feather HUZZAH ESP8266
+
+    # The fully qualified board name: package:architecture:board. huzzah is the ESP8266
+    # core's name for the Feather HUZZAH, which sets the flash size, pins and upload speed.
+    fqbn: esp8266:esp8266:huzzah
+
+    # The ESP8266 Arduino core isn't made by Arduino, so arduino-cli needs to be told
+    # where to download it from
+    platforms:
+      - platform: esp8266:esp8266 (3.1.2)
+        platform_index_url: https://arduino.esp8266.com/stable/package_esp8266com_index.json
+
+    # Names as they appear in Arduino's library list, with the exact versions in brackets
+    libraries:
+      # Reads the AM2301, which the library calls a DHT21
+      - DHT sensor library (1.4.7)
+      # The DHT library needs this to compile, though this firmware doesn't use it directly
+      - Adafruit Unified Sensor (1.1.15)
+      # The MQTT client
+      - PubSubClient (2.8.0)
+      # Builds the Home Assistant discovery message
+      - ArduinoJson (7.4.3)
+
+    # The serial monitor's speed, matching Serial.begin() in app.cpp
+    port_config:
+      baudrate: 115200
+
+# Used when no --profile is given
+default_profile: huzzah

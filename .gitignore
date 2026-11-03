@@ -1,11 +1,13 @@
-.pio
-.vscode
+# Build output
+build/
 
 # Text editor/ide folders
 .idea
 *.swp
 *.orig
 *.idea
+.vscode/settings.json
+.vscode/c_cpp_properties.json
 
 # OS ignores
 .DS_Store
@@ -14,5 +16,5 @@
 __MACOSX
 
 # config
-include/config.h
+main/config.h
 .env
